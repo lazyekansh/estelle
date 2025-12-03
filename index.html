@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Estelle · Chat </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #050608;
+      --panel: #15161a;
+      --panel-alt: #14151a;
+      --border: #26272f;
+      --accent: #f5f5f5;
+      --accent-soft: #e4e4ea;
+      --muted: #a3a4ae;
+      --muted-soft: #737480;
+    }
+
+    html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;   /* ⬅️ add this line */
+}
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1c1d24 0, #050608 52%, #000 100%);
+      color: #f5f5f5;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+  .shell {
+  flex: 1;
+  max-width: 1120px;
+  margin: auto;
+  height: 100vh;      /* fallback */
+  height: 100dvh;     /* ⬅️ better on mobile, uses real visible height */
+  padding: 8px;
+  display: flex;
+}
+
+    .app {
+      background: var(--panel);
+      border-radius: 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+      border: 1px solid var(--border);
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* HEADER */
+
+    .header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel-alt);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .logo-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid #30313b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: radial-gradient(circle at 0 0, #23242d 0, #101118 60%);
+    }
+
+    .header-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .title {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent-soft);
+    }
+
+    .status-line {
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #36d27f;
+      box-shadow: 0 0 10px rgba(54, 210, 127, 0.7);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .room-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .room-tab {
+      border-radius: 999px;
+      border: 1px solid #2f3039;
+      padding: 5px 10px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .room-tab.active {
+      background: var(--accent);
+      color: #101118;
+      border-color: var(--accent);
+    }
+
+    .room-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* MAIN AREA */
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .messages {
+      flex: 1;
+      padding: 14px 16px 6px;
+      overflow-y: auto;
+      background: radial-gradient(circle at top, #1b1c23 0, #111217 50%, #0c0d10 100%);
+    }
+
+    .messages-empty {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #7a7b85;
+      font-size: 0.9rem;
+      padding: 0 32px;
+    }
+
+    .row {
+      display: flex;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .row.me {
+      justify-content: flex-end;
+    }
+
+    .bubble-wrapper {
+      max-width: 80%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background-color: #20212a;
+      border: 1px solid #30313b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent-soft);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .avatar span {
+      padding-top: 1px;
+    }
+
+    .row.me .avatar {
+      order: 2;
+      background-color: #f5f5f5;
+      color: #101118;
+    }
+
+    .message {
+      position: relative;
+      padding: 8px 26px 9px 11px;
+      border-radius: 12px;
+      background: #1c1d24;
+      color: #f5f5f5;
+      font-size: 0.9rem;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .message.me {
+      background: var(--accent);
+      color: #111217;
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      border: none;
+      background: transparent;
+      font-size: 0.8rem;
+      cursor: pointer;
+      opacity: 0.45;
+    }
+
+    .delete-btn:hover {
+      opacity: 0.9;
+    }
+
+    .meta {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.72;
+    }
+
+    .message.me + .meta,
+    .message.me .meta {
+      text-align: right;
+      color: #555768;
+    }
+
+    .message.them + .meta,
+    .message.them .meta {
+      color: #a1a2ad;
+    }
+
+    .time {
+      display: inline-block;
+      margin-left: 6px;
+      font-size: 0.64rem;
+      opacity: 0.6;
+    }
+
+    .typing-indicator {
+      min-height: 18px;
+      padding: 0 18px 6px;
+      font-size: 0.74rem;
+      color: var(--muted-soft);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .typing-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--muted-soft);
+      animation: blink 1s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+      40% { opacity: 1; transform: translateY(-1px); }
+    }
+
+    /* FOOTER */
+
+    .footer {
+      border-top: 1px solid var(--border);
+      background: var(--panel-alt);
+      padding: 8px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .footer-top {
+      display: flex;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      align-items: center;
+    }
+
+    .footer-top span.label {
+      white-space: nowrap;
+    }
+
+    #username {
+      flex: 1;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid #33343f;
+      background: #16171d;
+      color: #e6e6ea;
+      font-size: 0.78rem;
+      outline: none;
+    }
+
+    #username::placeholder {
+      color: #555666;
+    }
+
+    .footer-main {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      margin-top: 2px;
+    }
+
+    #message-input {
+      flex: 1;
+      resize: none;
+      min-height: 42px;
+      max-height: 90px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid #33343f;
+      background: #16171d;
+      color: #f5f5f5;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    #message-input::placeholder {
+      color: #555666;
+    }
+
+    #send-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 0.84rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      background: var(--accent);
+      color: #111217;
+      white-space: nowrap;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.15s;
+      flex-shrink: 0;
+    }
+
+    #send-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    #send-btn:not(:disabled):active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .helper {
+      font-size: 0.66rem;
+      color: var(--muted-soft);
+      text-align: right;
+      margin-right: 4px;
+    }
+
+    /* SCROLLBARS */
+
+    .messages::-webkit-scrollbar,
+    .room-tabs::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    .messages::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .messages::-webkit-scrollbar-thumb {
+      background: #343542;
+      border-radius: 999px;
+    }
+
+    /* RESPONSIVE */
+
+    @media (max-width: 640px) {
+      .shell {
+        padding: 0;
+      }
+
+      .app {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+
+      .header {
+        padding: 10px 10px;
+      }
+
+      .messages {
+        padding: 10px 8px 4px;
+      }
+
+      .bubble-wrapper {
+        max-width: 78%;
+      }
+
+      .footer {
+        padding: 8px 8px 10px;
+      }
+    }
+
+    @media (min-width: 900px) {
+      .header {
+        padding: 14px 20px;
+      }
+
+      .footer {
+        padding: 10px 16px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="app">
+      <header class="header">
+        <div class="header-left">
+          <div class="logo-circle"><svg width="320" height="80" viewBox="0 0 320 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="estelleWordCircleGradient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+      gradientTransform="translate(22 18) rotate(45) scale(50)">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D4D5DD"/>
+    </radialGradient>
+  </defs>
+
+  <!-- icon background -->
+  <rect x="8" y="8" width="48" height="48" rx="18" fill="url(#estelleWordCircleGradient)" />
+
+  <!-- soft star -->
+  <path
+    d="M32 18
+       L36.8 26.3
+       L47 30
+       L36.8 33.7
+       L32 42
+       L27.2 33.7
+       L17 30
+       L27.2 26.3
+       Z"
+    fill="#B8BAC4"
+    opacity="0.95"
+  />
+
+  <!-- text -->
+  <text x="72" y="38"
+    fill="#F5F5F5"
+    font-size="24"
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    letter-spacing="0.18em"
+    textLength="210">
+    ESTELLE
+  </text>
+</svg></div>
+          <div class="header-text">
+            <div class="title">Estelle</div>
+            <div class="status-line">
+              <span class="status-dot"></span>
+              <span>Live</span>
+            </div>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="room-tabs" id="room-tabs">
+            <button class="room-tab active" data-room="lobby">Main</button>
+            <button class="room-tab" data-room="study">Study</button>
+            
+          </div>
+        </div>
+      </header>
+
+      <div class="main">
+        <main id="messages" class="messages">
+          <div class="messages-empty">
+            Choose a room and start typing to send the first message in <strong>&nbsp;Equina Chat&nbsp;</strong>.
+          </div>
+        </main>
+
+        <div id="typing-indicator" class="typing-indicator"></div>
+
+        <footer class="footer">
+          <div class="footer-top">
+            <span class="label">Your name</span>
+            <input id="username" type="text" placeholder="e.g. Ekansh" />
+          </div>
+
+          <div class="footer-main">
+            <textarea
+              id="message-input"
+              placeholder="Type a message…"
+              rows="1"
+            ></textarea>
+            <button id="send-btn" disabled>Send</button>
+          </div>
+
+          <div class="helper">
+            Name required · Messages only visible for this session · Made by Ekansh 
+          </div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK (modular) -->
+  <script type="module">
+    // 1) Your Firebase config – paste your own details here
+    const firebaseConfig = {
+  apiKey: "AIzaSyBN5lYP76-MR_oaBPnIHtAfgJf3ZD-vgmY",
+  authDomain: "equina-chat.firebaseapp.com",
+  projectId: "equina-chat",
+  storageBucket: "equina-chat.firebasestorage.app",
+  messagingSenderId: "8720659540",
+  appId: "1:8720659540:web:8a65a581d1b495475729c1",
+  measurementId: "G-5XKS0K5BP9"
+};
+
+    // 2) Imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp,
+      query,
+      orderBy,
+      limit,
+      onSnapshot,
+      doc,
+      setDoc,
+      deleteDoc
+    } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+    // 3) Init
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // DOM
+    const messagesEl = document.getElementById("messages");
+    const usernameEl = document.getElementById("username");
+    const inputEl = document.getElementById("message-input");
+    const sendBtn = document.getElementById("send-btn");
+    const typingIndicatorEl = document.getElementById("typing-indicator");
+    const roomTabs = Array.from(document.querySelectorAll(".room-tab"));
+
+    // STATE
+    const ROOMS = [
+      { id: "lobby", name: "Lobby" },
+      { id: "study", name: "Study" },
+      { id: "chill", name: "Chill" },
+      { id: "late-night", name: "Late Night" }
+    ];
+
+    let currentRoomId = "lobby";
+    let hasMessagesLoaded = false;
+    let unsubscribeMessages = null;
+    let unsubscribeTyping = null;
+    let currentMessagesRef = null;
+    let currentTypingRef = null;
+
+    // Per-browser user id
+    let userId = localStorage.getItem("equina_user_id");
+    if (!userId) {
+      userId = "u_" + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem("equina_user_id", userId);
+    }
+
+    let isTyping = false;
+    let sessionStart = new Date(); // used to hide older messages each reload
+
+    // UTIL
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function formatTime(date) {
+      if (!date) return "";
+      const h = date.getHours().toString().padStart(2, "0");
+      const m = date.getMinutes().toString().padStart(2, "0");
+      return `${h}:${m}`;
+    }
+
+    function scrollToBottom() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function getInitial(name) {
+      if (!name) return "?";
+      return name.trim().charAt(0).toUpperCase();
+    }
+
+    // RENDER
+    function renderMessages(snapshot, currentName) {
+      if (!hasMessagesLoaded) {
+        messagesEl.innerHTML = "";
+        hasMessagesLoaded = true;
+      }
+
+      messagesEl.innerHTML = "";
+      let displayedCount = 0;
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const createdAtDate = data.createdAt?.toDate?.();
+        if (createdAtDate && createdAtDate < sessionStart) {
+          // older than this browser session -> hide
+          return;
+        }
+
+        displayedCount++;
+        const isMe = currentName && data.user === currentName;
+
+        const row = document.createElement("div");
+        row.className = "row " + (isMe ? "me" : "them");
+
+        const avatarEl = document.createElement("div");
+        avatarEl.className = "avatar";
+        const initialSpan = document.createElement("span");
+        initialSpan.textContent = getInitial(data.user || "S");
+        avatarEl.appendChild(initialSpan);
+
+        const bubbleWrapper = document.createElement("div");
+        bubbleWrapper.className = "bubble-wrapper";
+
+        const bubble = document.createElement("div");
+        bubble.className = "message " + (isMe ? "me" : "them");
+        bubble.innerHTML = escapeHtml(data.text || "");
+
+        // delete button on own messages
+        if (isMe) {
+          const delBtn = document.createElement("button");
+          delBtn.className = "delete-btn";
+          delBtn.type = "button";
+          delBtn.textContent = "🗑";
+          delBtn.title = "Delete message for everyone";
+          delBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteMessage(docSnap.ref);
+          });
+          bubble.appendChild(delBtn);
+        }
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const timeLabel = data.createdAt ? formatTime(data.createdAt.toDate()) : "";
+        meta.textContent = (data.user || "Someone") + (timeLabel ? " · " : "");
+        if (timeLabel) {
+          const timeSpan = document.createElement("span");
+          timeSpan.className = "time";
+          timeSpan.textContent = timeLabel;
+          meta.appendChild(timeSpan);
+        }
+
+        if (isMe) {
+          row.appendChild(bubbleWrapper);
+          row.appendChild(avatarEl);
+        } else {
+          row.appendChild(avatarEl);
+          row.appendChild(bubbleWrapper);
+        }
+
+        bubbleWrapper.appendChild(bubble);
+        bubbleWrapper.appendChild(meta);
+        messagesEl.appendChild(row);
+      });
+
+      if (!displayedCount) {
+        messagesEl.innerHTML = `
+          <div class="messages-empty">
+            No messages in this room for this session yet. Start chatting in <strong>&nbsp;${currentRoomId}&nbsp;</strong>.
+          </div>
+        `;
+      } else {
+        scrollToBottom();
+      }
+    }
+
+    async function deleteMessage(messageRef) {
+      const ok = confirm("Delete this message for everyone?");
+      if (!ok) return;
+      try {
+        await deleteDoc(messageRef);
+      } catch (err) {
+        console.error("Error deleting message:", err);
+        alert("Could not delete message. Check console for details.");
+      }
+    }
+
+    // TYPING
+    async function setTyping(active, force = false) {
+      if (!currentTypingRef) return;
+
+      const name = usernameEl.value.trim();
+      if (!name) active = false;
+
+      if (!force && active === isTyping) return;
+      isTyping = active;
+
+      try {
+        const typingDoc = doc(currentTypingRef, userId);
+        await setDoc(
+          typingDoc,
+          {
+            user: name || "Someone",
+            isTyping: active,
+            updatedAt: serverTimestamp()
+          },
+          { merge: true }
+        );
+      } catch (err) {
+        console.error("Error updating typing status:", err);
+      }
+    }
+
+    function updateTypingIndicator(snapshot) {
+      const now = Date.now();
+      const activeNames = [];
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (!data.isTyping || !data.updatedAt) return;
+        const updated = data.updatedAt.toDate().getTime();
+        if (now - updated > 7000) return;
+        if (docSnap.id === userId) return;
+        activeNames.push(data.user || "Someone");
+      });
+
+      if (!activeNames.length) {
+        typingIndicatorEl.textContent = "";
+        return;
+      }
+
+      const uniqueNames = [...new Set(activeNames)];
+      let text;
+      if (uniqueNames.length === 1) {
+        text = `${uniqueNames[0]} is typing`;
+      } else if (uniqueNames.length === 2) {
+        text = `${uniqueNames[0]} and ${uniqueNames[1]} are typing`;
+      } else {
+        text = `${uniqueNames[0]} and ${uniqueNames.length - 1} others are typing`;
+      }
+
+      typingIndicatorEl.innerHTML = `
+        ${text}
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+      `;
+    }
+
+    // ROOMS
+    function subscribeToRoom(roomId) {
+      if (unsubscribeMessages) unsubscribeMessages();
+      if (unsubscribeTyping) unsubscribeTyping();
+
+      hasMessagesLoaded = false;
+      messagesEl.innerHTML = `
+        <div class="messages-empty">
+          Loading messages for <strong>&nbsp;${roomId}&nbsp;</strong>…
+        </div>
+      `;
+      typingIndicatorEl.textContent = "";
+
+      currentRoomId = roomId;
+      currentMessagesRef = collection(db, "rooms", roomId, "messages");
+      currentTypingRef = collection(db, "rooms", roomId, "typing");
+
+      const messagesQuery = query(
+        currentMessagesRef,
+        orderBy("createdAt"),
+        limit(200)
+      );
+
+      unsubscribeMessages = onSnapshot(
+        messagesQuery,
+        (snapshot) => {
+          renderMessages(snapshot, usernameEl.value.trim());
+        },
+        (error) => {
+          console.error("Error listening for messages:", error);
+          messagesEl.innerHTML = `
+            <div class="messages-empty">
+              Could not load messages for this room.
+            </div>
+          `;
+        }
+      );
+
+      unsubscribeTyping = onSnapshot(
+        currentTypingRef,
+        (snapshot) => {
+          updateTypingIndicator(snapshot);
+        },
+        (error) => {
+          console.error("Error listening for typing:", error);
+        }
+      );
+    }
+
+    // SEND
+    async function sendMessage() {
+      const name = usernameEl.value.trim();
+      const text = inputEl.value.trim();
+
+      if (!name) {
+        alert("Please enter your name first.");
+        usernameEl.focus();
+        return;
+      }
+      if (!text || !currentMessagesRef) return;
+
+      try {
+        await addDoc(currentMessagesRef, {
+          user: name,
+          text,
+          createdAt: serverTimestamp()
+        });
+        inputEl.value = "";
+        updateSendButton();
+        await setTyping(false, true);
+      } catch (err) {
+        console.error("Error sending message:", err);
+        alert("Could not send message. Check console for details.");
+      }
+    }
+
+    // UI STATE
+    function updateSendButton() {
+      const name = usernameEl.value.trim();
+      const text = inputEl.value.trim();
+      const canSend = !!name && !!text;
+      sendBtn.disabled = !canSend;
+      setTyping(!!name && !!text);
+    }
+
+    // EVENTS
+    usernameEl.addEventListener("input", () => {
+      updateSendButton();
+      setTyping(false, true);
+    });
+
+    inputEl.addEventListener("input", () => {
+      updateSendButton();
+    });
+
+    sendBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      sendMessage();
+    });
+
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    roomTabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const roomId = tab.dataset.room;
+        if (roomId === currentRoomId) return;
+        roomTabs.forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        subscribeToRoom(roomId);
+      });
+    });
+
+    window.addEventListener("beforeunload", () => {
+      setTyping(false, true);
+    });
+
+    // INIT
+    window.addEventListener("load", () => {
+      usernameEl.focus();
+      sessionStart = new Date(); // when page opened; older messages hidden
+      subscribeToRoom(currentRoomId);
+      updateSendButton();
+    });
+  </script>
+</body>
+</html>
